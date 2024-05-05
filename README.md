@@ -5,8 +5,8 @@ Repositorio simple para compartir el codigo que hagamos para la aplicacion pytho
 ## Conexión a la base de datos
 
 ### Scripts
-* [Crear tablas de la base de datos](create_tables.sql)
-* [Eliminar tablas de la base de datos](drop_tables.sql)
+* [Crear tablas de la base de datos](scripts/create_tables.sql)
+* [Eliminar tablas de la base de datos](scripts/drop_tables.sql)
 
 ## Funciones de la aplicacion
 
