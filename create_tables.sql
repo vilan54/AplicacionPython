@@ -4,8 +4,6 @@
 CREATE TABLE Categoria(
     id BIGSERIAL PRIMARY KEY,
     nombre VARCHAR(40) UNIQUE NOT NULL,
-    id_categoria BIGINT,
-    FOREIGN KEY (id_categoria) REFERENCES Categoria(id) 
 );
 
 -- Crear tabla PRODUCTO
