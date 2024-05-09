@@ -23,16 +23,20 @@ Repositorio simple para compartir el codigo que hagamos para la aplicacion pytho
 
 * Eliminar una categoria (6)
 
-* Crear una oferta para un producto (7)
+* Modificar el precio con un porcentaje (7)
 
-* Crear una oferta para una categoria (8)
+* Modificar el precio con un update (8)
 
-* Ver categorias que tienen ofertas (9)
+* Crear una oferta(9)
 
-* Ver productos que tienen ofertas (10)
+* Crear una oferta para una categoria (10)
 
-* Ver ofertas (11)
+* Ver categorias que tienen ofertas (11)
 
-* Terminar una oferta (12)
+* Ver productos que tienen ofertas (12)
 
-* Ver precio original de un producto y precio tras oferta (13)
+* Ver ofertas (13)
+
+* Terminar una oferta (14)
+
+* Ver precio original de un producto y precio tras oferta (15)

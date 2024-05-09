@@ -482,6 +482,76 @@ def update_product_color_price(conn):
                 print(f"Error al añadir color: {e}, {e.pgcode}")
             conn.rollback()
 
+##-------------------------------------------------------------
+def create_offer(conn):
+    """
+    Crea una oferta y devuelve el id generado
+    """
+
+    offer_name = input("Nombre de la oferta: ")
+    if offer_name == "": offer_name = None 
+
+    s_porcentaje = input("Porcentaje del descuento de la oferta: ")
+    porcentaje = None if s_porcentaje == "" else float(s_porcentaje)
+
+    sfini = input("Fecha de inicio [dd/mm/aaaa]: ")
+    fecha_inicio = None if sfini == "" else datetime.strptime(sfini, "%d/%m/%Y")
+
+    sffin = input("Fecha de fin [dd/mm/aaaa], puede ser null: ")
+    fecha_fin = None if sffin == "" else datetime.strptime(sffin, "%d/%m/%Y")
+
+    sql="""
+            INSERT INTO Oferta(nombre_oferta, porcentaje_oferta, fecha_inicio, fecha_fin) 
+            values(%(n)s, %(p)s, %(ini)s, %(fin)s) returning id
+        """
+    
+    with conn.cursor() as cur:
+        try:
+            cur.execute(sql, {'n': offer_name, 'p': porcentaje, 'ini': fecha_inicio, 'fin': fecha_fin})
+            id = cur.fetchone()[0]
+            conn.commit()
+            print(f"Oferta creada con exito. ID = {id}")
+        except psycopg2.Error as e:
+            if e.pgcode == psycopg2.errorcodes.NOT_NULL_VIOLATION:
+                print(f"Error al crear la oferta, {e.diag.column_name} no pueden ser nulo")
+            elif e.pgcode == psycopg2.errorcodes.CHECK_VIOLATION:
+                print(f"Error al crear la oferta, el porcentaje de la oferta debe estar comprendido entre 1 y 100")
+            else:
+                print(f"Error al crear la oferta: {e}")
+            conn.rollback()
+
+##-------------------------------------------------------------
+def link_offer_category(conn):
+    """
+    Crea una oferta de categoria
+    """
+
+    soffer_id = input("ID de la oferta: ")
+    offer_id = None if soffer_id == "" else int(soffer_id) 
+
+    scat_id = input("ID de la categoria: ")
+    cat_id = None if scat_id == "" else int(scat_id) 
+
+    sql="""
+            INSERT INTO Oferta_Categoria(id_oferta, id_categoria) 
+            values(%(o)s, %(c)s) returning id
+        """
+    
+    with conn.cursor() as cur:
+        try:
+            cur.execute(sql, {'o': offer_id, 'c': cat_id})
+            id = cur.fetchone()[0]
+            conn.commit()
+            print(f"Oferta de Categoria creada con exito. ID = {id}")
+        except psycopg2.Error as e:
+            if e.pgcode == psycopg2.errorcodes.NOT_NULL_VIOLATION:
+                print(f"Error al crear la oferta, {e.diag.column_name} no pueden ser nulo")
+            elif e.pgcode == psycopg2.errorcodes.FOREIGN_KEY_VIOLATION:
+                print(f"Error al añadir oferta de categoria, {e.diag.column_name} no existe")
+            else:
+                print(f"Error al crear la oferta de categoria: {e}")
+            conn.rollback()
+
 
 ## ------------------------------------------------------------
 def get_offers(conn):
@@ -622,14 +692,14 @@ def menu(conn):
     'q' para salir.
     """
     MENU_TEXT = """
-    
-                                -- MENÚ --
- 1 - Añadir Producto         2 - Añadir Color        3 - Eliminar Producto
- 4 - Eliminar Color          5 - Añadir Categoria    6 - Eliminar Categoria
- 7 - Porcentaje precio       8 - Actualizar precio   9 - Categorias de Oferta
-10 - Productos de Oferta    11 - Ofertas            12 - Terminar oferta
-13 - Comparar precio antes y despues de Oferta       q - Salir 
-"""
+                                    -- MENÚ --
+    1 - Añadir Producto            2 - Añadir Color        3 - Eliminar Producto
+    4 - Eliminar Color             5 - Añadir Categoria    6 - Eliminar Categoria
+    7 - Porcentaje precio          8 - Actualizar precio   9 - Añadir Oferta
+    10 - Añadir Oferta a Categoria 11 - Categorias de Oferta
+    12 - Productos de Oferta       13 - Ofertas            14 - Terminar oferta
+    15 - Comparar precio antes y despues de Oferta       q - Salir 
+    """
     MENU_OPTIONS = {
         '1' : add_product,
         '2' : add_color,
@@ -639,9 +709,11 @@ def menu(conn):
         '6' : delete_category,
         '7' : change_product_color_price,
         '8' : update_product_color_price,
-        '11' : get_offers,
-        '12' : end_offer,
-        '13' : compare_prize_product,
+        '9' : create_offer,
+        '10' : link_offer_category,
+        '13' : get_offers,
+        '14' : end_offer,
+        '15' : compare_prize_product,
     }
 
     while True:
