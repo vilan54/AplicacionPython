@@ -14,7 +14,7 @@ import psycopg2.extras
 import decimal
 
 # Parámetros de conexión
-dbname = 'bda'
+dbname = 'aplicacion'
 user = ''
 password = ''
 host = ''  
@@ -381,6 +381,48 @@ def update_product_color_price(conn):
                 print(f"Error al añadir color: {e}, {e.pgcode}")
             conn.rollback()
 
+
+## ------------------------------------------------------------
+def compare_prize_product(conn):
+    """
+    Pide por teclado el nombre del producto y presenta una lista con todas las ofertas del 
+    producto, presentando el nombre de la oferta, el precio original y precio tras la oferta
+
+    Si no se proporciona un nombre, la funcion termina 
+    """
+
+    name = input("Nombre del producto: ")
+    if name.strip() == "":
+        print("Error: No se ha proporcionado ningún nombre")
+        print("Volviendo al menú principal")
+        return
+    
+    id_product = get_idproduct(conn, name)
+    if id_product is None:
+        print("No se ha encontrado un producto con este nombre")
+        return
+    
+    colors = get_colors_product(conn, id_product)
+    if colors is None:
+        print("El producto no tiene colores disponibles, por lo tanto no tiene ofertas")
+        return 
+    
+    for id_color in colors:
+        color_offers = get_offer_color(conn, id_color[0])
+
+        if color_offers:
+            print(f"\n\nOfertas para el color {id_color[1]}:")
+            for offer in color_offers:
+                original = decimal.Decimal(id_color[2])
+                porcentaje = decimal.Decimal(offer[1])/100
+                descuento = original - (original * porcentaje)
+
+                print("{:<20}\tOriginal: {:<10}\tCon descuento: {:.2f}".format(offer[0], id_color[2], descuento))
+
+        else:
+            print(f"No hay ofertas para el color {id_color[1]}")
+
+
 ## ------------------------------------------------------------
 def menu(conn):
     """
@@ -388,35 +430,35 @@ def menu(conn):
     'q' para salir.
     """
     MENU_TEXT = """
-      -- MENÚ --
- 1 - Añadir Producto         2 - Añadir Color       3 - Eliminar Producto
- 4 - Eliminar Color          5 - Añadir Categoria   6 - Eliminar Categoria
- 7 - porcentaje precio       8 - Update precio      9 - Categorias de Oferta
-10 - Productos de Oferta    11 - Ofertas           12 - Terminar oferta
-13 - Comparar precio antes y despues de Oferta
+    
+                                -- MENÚ --
+ 1 - Añadir Producto         2 - Añadir Color        3 - Eliminar Producto
+ 4 - Eliminar Color          5 - Añadir Categoria    6 - Eliminar Categoria
+ 7 - Porcentaje precio       8 - Actualizar precio   9 - Categorias de Oferta
+10 - Productos de Oferta    11 - Ofertas            12 - Terminar oferta
+13 - Comparar precio antes y despues de Oferta       q - Salir 
 """
+    MENU_OPTIONS = {
+        '1' : add_product,
+        '2' : add_color,
+        '3' : delete_product,
+        '4' : delete_color,
+        '5' : add_category,
+        '6' : delete_category,
+        '7' : change_product_color_price,
+        '8' : update_product_color_price,
+        '13' : compare_prize_product,
+    }
+
     while True:
         print(MENU_TEXT)
         tecla = input('Opción> ')
         if tecla == 'q':
             break
-        elif tecla == '1':
-            add_product(conn)
-        elif tecla == '2':
-            add_color(conn)
-        elif tecla == '3':
-            delete_product(conn)
-        elif tecla == '4':
-            delete_color(conn)
-        elif tecla == '5':
-            add_category(conn)
-        elif tecla == '6':
-            delete_category(conn)
-        elif tecla == '7':
-            change_product_color_price(conn)
-        elif tecla == '8':
-            update_product_color_price(conn)
-
+        elif tecla in MENU_OPTIONS:
+            MENU_OPTIONS[tecla](conn)
+        else:
+            print("Opción no implementada")
 
 
 def main():
@@ -424,11 +466,18 @@ def main():
     Función principal. Conecta a la bd y ejecuta el menú.
     Al salir del menu, desconecta la BD y finaliza el programa
     """
-    print('Conectando a PosgreSQL...')
+    print("Conectando a la base de datos")
     conn = connect_db()
-    print('Conectado.')
+
+    if conn is None:
+        print("Error al conectar con la base de datos")
+        return 
+
+    print("Conectado.")
     menu(conn)
+    print("Desconectando de la base de datos")
     disconnect_db(conn)
+    print("Desconectado.")
 
 
 if __name__ == '__main__':
