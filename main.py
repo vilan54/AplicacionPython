@@ -80,6 +80,82 @@ def get_idproduct(conn, name):
 
 
 ## ------------------------------------------------------------
+def get_product_name_color(conn, id_color):
+    """
+    Dado un id de un color devuelve el nombre del producto
+    """
+
+    query_product = "SELECT Producto.nombre FROM Producto JOIN Color ON Producto.id = Color.id_producto WHERE Color.id = %(id_color)s"
+
+    with conn.cursor() as cur:
+        try:
+            cur.execute(query_product, {'id_color' : id_color})
+            
+            if cur.rowcount == 0:
+                return None
+            else:
+                product_name = cur.fetchone()
+
+                if product_name:
+                    return product_name[0]
+                else:
+                    return None
+        except psycopg2.Error as e:
+            print(f"Tipo de excepción: {type(e)}")
+            print(f"Código: {e.pgcode}")
+            print(f"Mensaxe: {e.pgerror}")
+            return None
+
+## ------------------------------------------------------------
+def get_color_name(conn, id_color):
+    """
+    Dado el id de un color devuelve el nombre de dicho color
+    """
+
+    query_name = "SELECT nombre FROM Color WHERE id = %(id_color)s"
+
+    with conn.cursor() as cur:
+        try:
+            cur.execute(query_name, {'id_color' : id_color})
+            
+            if cur.rowcount == 0:
+                return None
+            else:
+                color_name = cur.fetchone()
+
+                if color_name:
+                    return color_name[0]
+                else:
+                    return None
+        except psycopg2.Error as e:
+            print(f"Tipo de excepción: {type(e)}")
+            print(f"Código: {e.pgcode}")
+            print(f"Mensaxe: {e.pgerror}")
+            return None
+
+## ------------------------------------------------------------
+def get_category_name(conn, id_category):
+    """
+    Dado un id de una categoría devuelve su nombre si el id es válido, si no es válido devuelve Null
+    """
+
+    query_category = "SELECT nombre FROM Categoria WHERE id = %(id_category)s"
+
+    with conn.cursor() as cur:
+        try:
+            cur.execute(query_category, {'id_category' : id_category})
+            if cur.rowcount == 0:
+                return None
+            else:
+                category = cur.fetchone()
+                return category
+        except psycopg2.Error as e:
+            print(f"Tipo de excepción: {type(e)}")
+            print(f"Código: {e.pgcode}")
+            print(f"Mensaxe: {e.pgerror}")
+            return None 
+
+## ------------------------------------------------------------
 def get_colors_product(conn, id_product):
     """
     Dado un id de un producto, devuelve una lista con todos id y el nombre de los colores de dicho producto
@@ -102,6 +178,28 @@ def get_colors_product(conn, id_product):
             print(f"Código: {e.pgcode}")
             print(f"Mensaxe: {e.pgerror}")
             return None  
+
+## ------------------------------------------------------------
+def get_offer_name(conn, id_offer):
+    """
+    Dado el id de una oferta devuelve su nombre
+    """
+
+    query_name = "SELECT nombre_oferta FROM Oferta WHERE id = %(id_offer)s"
+
+    with conn.cursor() as cur:
+        try:
+            cur.execute(query_name, {'id_offer' : id_offer})
+            if cur.rowcount == 0:
+                return None
+            else:
+                offer = cur.fetchone()
+                return offer
+        except psycopg2.Error as e:
+            print(f"Tipo de excepción: {type(e)}")
+            print(f"Código: {e.pgcode}")
+            print(f"Mensaxe: {e.pgerror}")
+            return None 
 
 
 ## ------------------------------------------------------------
@@ -386,11 +484,54 @@ def update_product_color_price(conn):
 
 
 ## ------------------------------------------------------------
+def get_offers(conn):
+    """
+    Muestra todas las ofertas activas del sistema
+    """
+
+    query_category = "SELECT id_oferta, id_categoria FROM Oferta_Categoria"
+    query_color = "SELECT id_oferta, id_color FROM Oferta_Ropa"
+    
+    with conn.cursor() as cur:
+        try:
+            cur.execute(query_category)
+            if cur.rowcount == 0:
+                print("No hay ofertas por categoria\n")
+            else:
+                print("Ofertas por categoría:\n")
+                categorys = cur.fetchall()
+                for category in categorys:
+                    name_offer = get_offer_name(conn, category[0])[0]
+                    name_category = get_category_name(conn, category[1])[0]
+                    print("  > {:<30}\t{:20}".format(name_offer, name_category))
+
+            cur.execute(query_color)
+            if cur.rowcount == 0:
+                print("\nNo hay ofertas en ningún producto")
+            else:
+                print("\nOfertas por productos y colores:\n")
+                colors = cur.fetchall()
+                for color in colors:
+                    name_off = get_offer_name(conn, color[0])[0]
+                    name_color = get_color_name(conn, color[1])
+                    name_product = get_product_name_color(conn, color[1])
+                    print("  > {:<30}\t{:20}\t{:20}".format(name_off, name_product, name_color))
+                
+        except psycopg2.Error as e:
+            conn.rollback()
+            print(f"Tipo de excepción: {type(e)}")
+            print(f"Código: {e.pgcode}")
+            print(f"Mensaxe: {e.pgerror}")
+            return None   
+
+
+## ------------------------------------------------------------
 def end_offer(conn):
     """
     Pide por teclado el nombre de una oferta y si no está terminada la termina con fecha actual
     Si la oferta está terminada dará un aviso de que no se puede realizar la operación
     Si la oferta no existe mostrará una advertencia 
+    Si todo está correcto, termina la oferta y elimina de las tablas de Ofertas todas las filas
     """
 
     name = input("Nombre de la oferta que quiere terminar: ")
@@ -400,7 +541,9 @@ def end_offer(conn):
         return
     
     query_offer = "SELECT * FROM Oferta WHERE nombre_oferta = %(nombre_oferta)s"
-    query_end = "UPDATE Oferta SET fecha_fin = CURRENT_DATE WHERE id = %(oferta_id)s;"
+    query_end = "UPDATE Oferta SET fecha_fin = CURRENT_DATE WHERE id = %(id_oferta)s;"
+    query_delete_category = "DELETE FROM Oferta_Categoria WHERE id_oferta = %(id_oferta)s"
+    query_delete_color = "DELETE FROM Oferta_Ropa WHERE id_oferta = %(id_oferta)s"
 
     with conn.cursor() as cur:
         try:
@@ -411,9 +554,15 @@ def end_offer(conn):
                 offer = cur.fetchone()
                 if offer[4] is None:
                     print(offer)
-                    cur.execute(query_end, {'oferta_id' : offer[0]})
+                    cur.execute(query_end, {'id_oferta' : offer[0]})
                     conn.commit()
-                    print("Se ha actualizado correctamente")
+                    print("Se ha terminado la oferta correctamente")
+                    cur.execute(query_delete_category, {'id_oferta' : offer[0]})
+                    conn.commit()
+                    print("Se ha actualizado la tabla de ofertas de las categorias")
+                    cur.execute(query_delete_color, {'id_oferta' : offer[0]})
+                    conn.commit()
+                    print("Se ha actualizado la tabla de ofertas de las ropas")
                 else:
                     print("La oferta ya está finalizada")
         except psycopg2.Error as e:
@@ -454,13 +603,13 @@ def compare_prize_product(conn):
         color_offers = get_offer_color(conn, id_color[0])
 
         if color_offers:
-            print(f"\n\nOfertas para el color {id_color[1]}:")
+            print(f"\nOfertas para el color {id_color[1]}:")
             for offer in color_offers:
                 original = decimal.Decimal(id_color[2])
                 porcentaje = decimal.Decimal(offer[1])/100
                 descuento = original - (original * porcentaje)
 
-                print("{:<20}\tOriginal: {:<10}\tCon descuento: {:.2f}".format(offer[0], id_color[2], descuento))
+                print("{:<25}\tOriginal: {:<10}\tCon descuento: {:.2f}".format(offer[0], id_color[2], descuento))
 
         else:
             print(f"No hay ofertas para el color {id_color[1]}")
@@ -490,6 +639,7 @@ def menu(conn):
         '6' : delete_category,
         '7' : change_product_color_price,
         '8' : update_product_color_price,
+        '11' : get_offers,
         '12' : end_offer,
         '13' : compare_prize_product,
     }
