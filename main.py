@@ -14,9 +14,9 @@ import psycopg2.extras
 import decimal
 
 # Parámetros de conexión
-dbname = 'aplicacion'
-user = 'pablo'
-password = 'pablo'
+dbname = 'bda'
+user = ''
+password = ''
 host = ''  
 
 ## ------------------------------------------------------------
@@ -26,6 +26,7 @@ def connect_db():
         conn = psycopg2.connect(dbname=dbname, user=user, password=password)
 
         conn.autocommit = False
+        conn.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_SERIALIZABLE)
         
         return conn
     
@@ -165,7 +166,7 @@ def add_product(conn):
             elif e.pgcode == psycopg2.errorcodes.FOREIGN_KEY_VIOLATION:
                 print(f"Error al añadir producto, la categoria no existe")
             elif e.pgcode == psycopg2.errorcodes.NOT_NULL_VIOLATION:
-                print(f"Error al añadir producto, hay campos que no pueden ser nulos no existe")
+                print(f"Error al añadir producto, hay campos que no pueden ser nulos")
             else:
                 print(f"Error al añadir el producto: {e}")
             conn.rollback()
@@ -193,11 +194,9 @@ def add_color(conn):
         """
     with conn.cursor() as cur:
         try:
-            # Inserta el color en la tabla y retorna el ID autogenerado
             cur.execute(sql, {'n': color_name, 'p': price, 'c': composition, 'i': product_id})
-            # Recupera el ID del color recién insertado
             color_id = cur.fetchone()[0]
-            conn.commit()  # Confirma la transacción
+            conn.commit()
             print(f"Color añadido con éxito. ID: {color_id}")
         except psycopg2.Error as e:
             if e.pgcode == psycopg2.errorcodes.UNIQUE_VIOLATION:
@@ -228,8 +227,11 @@ def delete_product(conn):
     with conn.cursor() as cur:
         try:
             cur.execute(sql, {'i': product_id})
+            if cur.rowcount == 0:
+                print(f"El producto con ID: {product_id} non existe")
+            else:
+                print(f"El producto con ID: {product_id} eliminado")
             conn.commit()
-            print(f"Producto con ID: {product_id} eliminado con exito")
         except psycopg2.Error as e:
             conn.rollback()
             print(f"Error al eliminar producto: {e}")
@@ -243,14 +245,17 @@ def delete_color(conn):
     color_id = None if s_color_id == "" else int(s_color_id)
 
     sql="""
-            "DELETE FROM Color WHERE id = %(i)s"
+            DELETE FROM Color WHERE id = %(i)s
         """
     
     with conn.cursor() as cur:
         try:
             cur.execute(sql, {'i': color_id})
+            if cur.rowcount == 0:
+                print(f"El producto con Color: {color_id} non existe")
+            else:
+                print(f"El producto con Color: {color_id} eliminado")
             conn.commit()
-            print(f"Color con ID: {color_id} eliminado con exito")
         except psycopg2.Error as e:
             conn.rollback()
             print(f"Error al añadir color: {e}")
@@ -283,6 +288,98 @@ def add_category(conn):
                 print(f"Error al añadir la Categoria: {e}, {e.pgcode}")
             conn.rollback()
 
+##-------------------------------------------------------------
+def delete_category(conn):
+    """
+    Elimina una categoria de la base de datos dado un Id proporcionado
+    """
+    s_cat_id = input("Id de Categoria: ")
+    cat_id = None if s_cat_id == "" else int(s_cat_id)
+
+    sql="""
+            DELETE FROM Categoria WHERE id = %(i)s
+        """
+    
+    with conn.cursor() as cur:
+        try:
+            cur.execute(sql, {'i': cat_id})
+            if cur.rowcount == 0:
+                print(f"La Categoria: {cat_id} non existe")
+            else:
+                print(f"La Categoria: {cat_id} ha sido eliminada")
+            conn.commit()
+        except psycopg2.Error as e:
+            conn.rollback()
+            print(f"Error al añadir color: {e}")
+
+##-------------------------------------------------------------
+def change_product_color_price(conn):
+    """
+    Cambia el valor del precio de un color de un determinado Producto
+    segun un porcentaje establecido
+    """
+    s_color_id = input("Id de Color Producto: ")
+    color_id = None if s_color_id == "" else int(s_color_id)
+
+    s_porcentaje = input("Porcentaje del precio(a aumentar): ")
+    porcentaje = None if s_porcentaje == "" else float(s_porcentaje)
+
+    sql="""
+            UPDATE Color 
+            set precio = precio + precio * %(porcentaje)s/100.0
+            WHERE id = %(i)s
+        """
+    
+    with conn.cursor() as cur:
+        try:
+            cur.execute(sql, {'porcentaje': porcentaje,'i': color_id})
+            if cur.rowcount == 0:
+                print(f"El producto con Color: {color_id} non existe")
+            else:
+                print(f"El producto con Color: {color_id} updateado")
+            conn.commit()
+        except psycopg2.Error as e:
+            if e.pgcode == psycopg2.errorcodes.NOT_NULL_VIOLATION:
+                print(f"Error al updatear el precio, el precio del color no pueden ser nulo")
+            elif e.pgcode == psycopg2.errorcodes.CHECK_VIOLATION:
+                print(f"Error al updatear el precio, el precio del color debe ser positivo")
+            else:
+                print(f"Error al añadir color: {e}")
+            conn.rollback()
+
+##-------------------------------------------------------------
+def update_product_color_price(conn):
+    """
+    Cambia el valor del precio de un color de un determinado Producto
+    """
+    s_color_id = input("Id de Color Producto: ")
+    color_id = None if s_color_id == "" else int(s_color_id)
+
+    s_price = input("Nuevo precio: ")
+    price = None if s_price == "" else float(s_price)
+
+    sql="""
+            UPDATE Color 
+            set precio = %(p)s 
+            WHERE id = %(i)s
+        """
+    
+    with conn.cursor() as cur:
+        try:
+            cur.execute(sql, {'p': price,'i': color_id})
+            if cur.rowcount == 0:
+                print(f"El producto con Color ID: {color_id} non existe")
+            else:
+                print(f"El producto con Color ID: {color_id} updateado")
+            conn.commit()
+        except psycopg2.Error as e:
+            if e.pgcode == psycopg2.errorcodes.NOT_NULL_VIOLATION:
+                print(f"Error al updatear el precio, el precio del color no pueden ser nulo")
+            elif e.pgcode == psycopg2.errorcodes.CHECK_VIOLATION:
+                print(f"Error al updatear el precio, el precio del color debe ser positivo")
+            else:
+                print(f"Error al añadir color: {e}, {e.pgcode}")
+            conn.rollback()
 
 ## ------------------------------------------------------------
 def menu(conn):
@@ -292,10 +389,10 @@ def menu(conn):
     """
     MENU_TEXT = """
       -- MENÚ --
- 1 - Añadir Producto         2 - Añadir Color        3 - Eliminar Producto
- 4 - Eliminar Color          5 - Añadir Categoria    6 - Eliminar Categoria
- 7 - Oferta Producto         8 - Oferta Categoria    9 - Categorias de Oferta
-10 - Productos de Oferta    11 - Ofertas            12 - Terminar oferta
+ 1 - Añadir Producto         2 - Añadir Color       3 - Eliminar Producto
+ 4 - Eliminar Color          5 - Añadir Categoria   6 - Eliminar Categoria
+ 7 - porcentaje precio       8 - Update precio      9 - Categorias de Oferta
+10 - Productos de Oferta    11 - Ofertas           12 - Terminar oferta
 13 - Comparar precio antes y despues de Oferta
 """
     while True:
@@ -313,6 +410,12 @@ def menu(conn):
             delete_color(conn)
         elif tecla == '5':
             add_category(conn)
+        elif tecla == '6':
+            delete_category(conn)
+        elif tecla == '7':
+            change_product_color_price(conn)
+        elif tecla == '8':
+            update_product_color_price(conn)
 
 
 
