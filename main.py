@@ -12,6 +12,8 @@ import psycopg2
 import psycopg2.errorcodes
 import psycopg2.extras
 import decimal
+import datetime
+
 
 # Parámetros de conexión
 dbname = 'aplicacion'
@@ -130,7 +132,8 @@ def get_offer_color(conn, id_color):
 
 ##-------------------------------------------------------------
 def add_product(conn):
-    """Pide por teclado numero referencia, nombre, colección, si es personalizable,
+    """
+    Pide por teclado numero referencia, nombre, colección, si es personalizable,
     y su referencia a categoria
     """
     n_reference = input("Número de Referencia: ")
@@ -383,6 +386,46 @@ def update_product_color_price(conn):
 
 
 ## ------------------------------------------------------------
+def end_offer(conn):
+    """
+    Pide por teclado el nombre de una oferta y si no está terminada la termina con fecha actual
+    Si la oferta está terminada dará un aviso de que no se puede realizar la operación
+    Si la oferta no existe mostrará una advertencia 
+    """
+
+    name = input("Nombre de la oferta que quiere terminar: ")
+    if name.strip() == "":
+        print("Error: No se ha proporcionado ningún nombre")
+        print("Volviendo al menú principal")
+        return
+    
+    query_offer = "SELECT * FROM Oferta WHERE nombre_oferta = %(nombre_oferta)s"
+    query_end = "UPDATE Oferta SET fecha_fin = CURRENT_DATE WHERE id = %(oferta_id)s;"
+
+    with conn.cursor() as cur:
+        try:
+            cur.execute(query_offer, {'nombre_oferta' : name})
+            if cur.rowcount == 0:
+                print("No se ha encontrado ninguna oferta con ese nombre")
+            else:
+                offer = cur.fetchone()
+                if offer[4] is None:
+                    print(offer)
+                    cur.execute(query_end, {'oferta_id' : offer[0]})
+                    conn.commit()
+                    print("Se ha actualizado correctamente")
+                else:
+                    print("La oferta ya está finalizada")
+        except psycopg2.Error as e:
+            conn.rollback()
+            print(f"Tipo de excepción: {type(e)}")
+            print(f"Código: {e.pgcode}")
+            print(f"Mensaxe: {e.pgerror}")
+            return None
+
+
+
+## ------------------------------------------------------------
 def compare_prize_product(conn):
     """
     Pide por teclado el nombre del producto y presenta una lista con todas las ofertas del 
@@ -447,6 +490,7 @@ def menu(conn):
         '6' : delete_category,
         '7' : change_product_color_price,
         '8' : update_product_color_price,
+        '12' : end_offer,
         '13' : compare_prize_product,
     }
 

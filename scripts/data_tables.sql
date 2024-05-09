@@ -34,11 +34,15 @@ INSERT INTO Color (nombre, precio, composicion, id_producto) VALUES
 
 -- Datos de ejemplo para la tabla Oferta
 INSERT INTO Oferta (nombre_oferta, porcentaje_oferta, fecha_inicio, fecha_fin) VALUES
-    ('Rebaja Primavera', 20, '2024-03-01', '2024-04-01'),
-    ('Oferta Verano', 30, '2024-06-15', '2024-07-15'),
-    ('Descuento Invierno', 25, '2024-10-01', '2024-12-01'),
-    ('Promoción Otoño', 15, '2024-09-01', '2024-10-01'),
-    ('Oferta Navideña', 50, '2024-12-15', '2025-01-15');
+    ('Rebaja Primavera 2023', 20, '2024-03-01', '2024-04-01'),
+    ('Oferta Verano 2023', 30, '2024-06-15', '2024-07-15'),
+    ('Descuento Invierno 2023', 25, '2024-10-01', '2024-12-01'),
+    ('Promoción Otoño 2023', 15, '2024-09-01', '2024-10-01'),
+    ('Oferta Navideña 2023', 50, '2024-12-15', '2024-12-31');
+
+INSERT INTO Oferta (nombre_oferta, porcentaje_oferta, fecha_inicio) VALUES
+    ('Rebaja Primavera 2024', 20, '2024-03-01'),
+    ('Oferta Verano 2024', 30, '2024-06-15');
 
 -- Datos de ejemplo para la tabla Oferta_Ropa
 INSERT INTO Oferta_Ropa (id_oferta, id_color) VALUES
