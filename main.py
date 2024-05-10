@@ -575,6 +575,38 @@ def link_offer_category(conn):
             conn.rollback()
 
 ## ------------------------------------------------------------
+def link_offer_color(conn):
+    """
+    Crea una oferta de producto
+    """
+
+    soffer_id = input("ID de la oferta: ")
+    offer_id = None if soffer_id == "" else int(soffer_id) 
+
+    scat_id = input("ID del color: ")
+    col_id = None if scat_id == "" else int(scat_id) 
+
+    sql="""
+            INSERT INTO Oferta_Ropa(id_oferta, id_color) 
+            values(%(o)s, %(c)s) returning id
+        """
+    
+    with conn.cursor() as cur:
+        try:
+            cur.execute(sql, {'o': offer_id, 'c': col_id})
+            id = cur.fetchone()[0]
+            conn.commit()
+            print(f"Oferta de Color creada con exito. ID = {id}")
+        except psycopg2.Error as e:
+            if e.pgcode == psycopg2.errorcodes.NOT_NULL_VIOLATION:
+                print(f"Error al crear la oferta, {e.diag.column_name} no pueden ser nulo")
+            elif e.pgcode == psycopg2.errorcodes.FOREIGN_KEY_VIOLATION:
+                print(f"Error al añadir oferta de categoria, {e.diag.column_name} no existe")
+            else:
+                print(f"Error al crear la oferta de categoria: {e}")
+            conn.rollback()
+
+## ------------------------------------------------------------
 def get_offers_category(conn):
     """
     Muestra una lista con todas las ofertas activas por categorias
@@ -745,12 +777,12 @@ def menu(conn):
     """
     MENU_TEXT = """
                                               -- MENÚ --
-     1 - Añadir Producto                  2 - Añadir Color             3 - Eliminar Producto
-     4 - Eliminar Color                   5 - Añadir Categoria         6 - Eliminar Categoria
-     7 - Porcentaje precio                8 - Actualizar precio        9 - Añadir Oferta
-    10 - Añadir Oferta a Categoria       11 - Categorias de Oferta    12 - Productos de Oferta          
-    13 - Ofertas                         14 - Terminar oferta
-    15 - Comparar precio antes y despues de Oferta                     q - Salir 
+     1 - Añadir Producto                  2 - Añadir Color               3 - Eliminar Producto
+     4 - Eliminar Color                   5 - Añadir Categoria           6 - Eliminar Categoria
+     7 - Porcentaje precio                8 - Actualizar precio          9 - Añadir Oferta
+    10 - Añadir Oferta a Categoria       11 - Añadir Oferta a Color     12 - Categorias de Oferta    
+    13 - Productos de Oferta             14 - Ofertas                   15 - Terminar oferta
+    16 - Comparar precio antes y despues de Oferta                       q - Salir 
     """
     MENU_OPTIONS = {
         '1' : add_product,
@@ -763,11 +795,12 @@ def menu(conn):
         '8' : update_product_color_price,
         '9' : create_offer,
         '10' : link_offer_category,
-        '11' : get_offers_category,
-        '12' : get_offers_product,
-        '13' : get_offers,
-        '14' : end_offer,
-        '15' : compare_prize_product,
+        '11' : link_offer_color,
+        '12' : get_offers_category,
+        '13' : get_offers_product,
+        '14' : get_offers,
+        '15' : end_offer,
+        '16' : compare_prize_product,
     }
 
     while True:
