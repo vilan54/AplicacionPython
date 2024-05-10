@@ -349,6 +349,7 @@ def delete_product(conn):
     
     with conn.cursor() as cur:
         try:
+            conn.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_SERIALIZABLE)
             cur.execute(sql, {'i': product_id})
             if cur.rowcount == 0:
                 print(f"El producto con ID: {product_id} no existe")
@@ -373,6 +374,7 @@ def delete_color(conn):
     
     with conn.cursor() as cur:
         try:
+            conn.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_SERIALIZABLE)
             cur.execute(sql, {'i': color_id})
             if cur.rowcount == 0:
                 print(f"El producto con Color: {color_id} non existe")
@@ -425,6 +427,7 @@ def delete_category(conn):
     
     with conn.cursor() as cur:
         try:
+            conn.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_SERIALIZABLE)
             cur.execute(sql, {'i': cat_id})
             if cur.rowcount == 0:
                 print(f"La Categoria: {cat_id} non existe")
@@ -455,6 +458,7 @@ def change_product_color_price(conn):
     
     with conn.cursor() as cur:
         try:
+            conn.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_SERIALIZABLE)
             cur.execute(sql, {'porcentaje': porcentaje,'i': color_id})
             if cur.rowcount == 0:
                 print(f"El producto con Color: {color_id} non existe")
@@ -489,6 +493,7 @@ def update_product_color_price(conn):
     
     with conn.cursor() as cur:
         try:
+            conn.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_SERIALIZABLE)
             cur.execute(sql, {'p': price,'i': color_id})
             if cur.rowcount == 0:
                 print(f"El producto con Color ID: {color_id} non existe")
@@ -561,6 +566,7 @@ def link_offer_category(conn):
     
     with conn.cursor() as cur:
         try:
+            conn.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_SERIALIZABLE)
             cur.execute(sql, {'o': offer_id, 'c': cat_id})
             id = cur.fetchone()[0]
             conn.commit()
@@ -593,6 +599,7 @@ def link_offer_color(conn):
     
     with conn.cursor() as cur:
         try:
+            conn.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_SERIALIZABLE)
             cur.execute(sql, {'o': offer_id, 'c': col_id})
             id = cur.fetchone()[0]
             conn.commit()
@@ -663,8 +670,6 @@ def get_offers_product(conn):
             print(f"Mensaxe: {e.pgerror}")
             return None
 
-
-
 ## ------------------------------------------------------------
 def get_offers(conn):
     """
@@ -704,6 +709,7 @@ def end_offer(conn):
 
     with conn.cursor() as cur:
         try:
+            conn.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_SERIALIZABLE)
             cur.execute(query_offer, {'nombre_oferta' : name})
             if cur.rowcount == 0:
                 print("No se ha encontrado ninguna oferta con ese nombre")
@@ -813,7 +819,7 @@ def menu(conn):
         else:
             print("Opción no implementada")
 
-
+## ------------------------------------------------------------
 def main():
     """
     Función principal. Conecta a la bd y ejecuta el menú.
@@ -831,7 +837,6 @@ def main():
     print("Desconectando de la base de datos")
     disconnect_db(conn)
     print("Desconectado.")
-
 
 if __name__ == '__main__':
     main()
