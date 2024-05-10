@@ -39,7 +39,6 @@ def connect_db():
             print("Cancelando transacción..")
             return None
 
-
 ## ------------------------------------------------------------
 def disconnect_db(conn):
     
@@ -52,7 +51,6 @@ def disconnect_db(conn):
     except psycopg2.OperationarError as e:
         print("Error al desconectar de la base de datos")
         return None
-
 
 ## ------------------------------------------------------------
 def get_idproduct(conn, name):
@@ -77,7 +75,6 @@ def get_idproduct(conn, name):
             print(f"Código: {e.pgcode}")
             print(f"Mensaxe: {e.pgerror}")
             return None
-
 
 ## ------------------------------------------------------------
 def get_product_name_color(conn, id_color):
@@ -201,6 +198,27 @@ def get_offer_name(conn, id_offer):
             print(f"Mensaxe: {e.pgerror}")
             return None 
 
+## ------------------------------------------------------------
+def get_offer_discount(conn, id_offer):
+    """
+    Para un id de una oferta devuelve el porcentaje de descuento
+    """
+
+    query_discount = "SELECT porcentaje_oferta FROM Oferta WHERE id = %(id_offer)s"
+
+    with conn.cursor() as cur:
+        try:
+            cur.execute(query_discount, {'id_offer' : id_offer})
+            if cur.rowcount == 0:
+                return None
+            else:
+                offer = cur.fetchone()
+                return offer
+        except psycopg2.Error as e:
+            print(f"Tipo de excepción: {type(e)}")
+            print(f"Código: {e.pgcode}")
+            print(f"Mensaxe: {e.pgerror}")
+            return None 
 
 ## ------------------------------------------------------------
 def get_offer_color(conn, id_color):
@@ -235,17 +253,21 @@ def add_product(conn):
     y su referencia a categoria
     """
     n_reference = input("Número de Referencia: ")
-    if n_reference == "": n_reference = None
+    if n_reference == "": 
+        n_reference = None
 
     name = input("Nombre: ")
-    if name == "": name = None
+    if name == "": 
+        name = None
 
     colection = input("Colección: ")
-    if colection == "": colection = None
+    if colection == "": 
+        colection = None
 
     sisPersonalizable = input("Es personalizable y/[n]") ## por defecto no es personalizable
     isPersonalizable = False
-    if sisPersonalizable == "y": isPersonalizable = True
+    if sisPersonalizable == "y": 
+        isPersonalizable = True
 
     scategory_id = input("Id categoria: ")
     category_id = None if scategory_id == "" else int(scategory_id)
@@ -329,7 +351,7 @@ def delete_product(conn):
         try:
             cur.execute(sql, {'i': product_id})
             if cur.rowcount == 0:
-                print(f"El producto con ID: {product_id} non existe")
+                print(f"El producto con ID: {product_id} no existe")
             else:
                 print(f"El producto con ID: {product_id} eliminado")
             conn.commit()
@@ -552,16 +574,13 @@ def link_offer_category(conn):
                 print(f"Error al crear la oferta de categoria: {e}")
             conn.rollback()
 
-
 ## ------------------------------------------------------------
-def get_offers(conn):
+def get_offers_category(conn):
     """
-    Muestra todas las ofertas activas del sistema
+    Muestra una lista con todas las ofertas activas por categorias
     """
-
     query_category = "SELECT id_oferta, id_categoria FROM Oferta_Categoria"
-    query_color = "SELECT id_oferta, id_color FROM Oferta_Ropa"
-    
+
     with conn.cursor() as cur:
         try:
             cur.execute(query_category)
@@ -572,21 +591,9 @@ def get_offers(conn):
                 categorys = cur.fetchall()
                 for category in categorys:
                     name_offer = get_offer_name(conn, category[0])[0]
+                    discount_offer = get_offer_discount(conn, category[0])[0]
                     name_category = get_category_name(conn, category[1])[0]
-                    print("  > {:<30}\t{:20}".format(name_offer, name_category))
-
-            cur.execute(query_color)
-            if cur.rowcount == 0:
-                print("\nNo hay ofertas en ningún producto")
-            else:
-                print("\nOfertas por productos y colores:\n")
-                colors = cur.fetchall()
-                for color in colors:
-                    name_off = get_offer_name(conn, color[0])[0]
-                    name_color = get_color_name(conn, color[1])
-                    name_product = get_product_name_color(conn, color[1])
-                    print("  > {:<30}\t{:20}\t{:20}".format(name_off, name_product, name_color))
-                
+                    print("  > {:<20}\t{:10}% de descuento en\t{:<10}".format(name_offer, discount_offer, name_category))
         except psycopg2.Error as e:
             conn.rollback()
             print(f"Tipo de excepción: {type(e)}")
@@ -594,6 +601,55 @@ def get_offers(conn):
             print(f"Mensaxe: {e.pgerror}")
             return None   
 
+## ------------------------------------------------------------
+def get_offers_product(conn):
+    """
+    Muestra una lista con todas las ofertas activas por producto
+    """
+
+    query_color = "SELECT id_oferta, id_color FROM Oferta_Ropa"  
+
+    with conn.cursor() as cur:
+        try:
+            cur.execute(query_color)
+            if cur.rowcount == 0:
+                print("\nNo hay ofertas en ningún producto")
+            else:
+                print("\nOfertas por productos y colores:\n")
+                colors = cur.fetchall()
+                for color in colors:
+                    name_offer = get_offer_name(conn, color[0])[0]
+                    discount_offer = get_offer_discount(conn, color[0])[0]
+                    name_color = get_color_name(conn, color[1])
+                    name_product = get_product_name_color(conn, color[1])
+                    print("  > {:<20}\t{:10}% de descuento en\t{:10}\t{:<10}".format(name_offer, discount_offer, name_product, name_color))
+                
+        except psycopg2.Error as e:
+            conn.rollback()
+            print(f"Tipo de excepción: {type(e)}")
+            print(f"Código: {e.pgcode}")
+            print(f"Mensaxe: {e.pgerror}")
+            return None
+
+
+
+## ------------------------------------------------------------
+def get_offers(conn):
+    """
+    Muestra todas las ofertas activas del sistema
+    """
+    
+    with conn.cursor() as cur:
+        try:
+            get_offers_category(conn)
+            get_offers_product(conn)
+                
+        except psycopg2.Error as e:
+            conn.rollback()
+            print(f"Tipo de excepción: {type(e)}")
+            print(f"Código: {e.pgcode}")
+            print(f"Mensaxe: {e.pgerror}")
+            return None   
 
 ## ------------------------------------------------------------
 def end_offer(conn):
@@ -607,7 +663,6 @@ def end_offer(conn):
     name = input("Nombre de la oferta que quiere terminar: ")
     if name.strip() == "":
         print("Error: No se ha proporcionado ningún nombre")
-        print("Volviendo al menú principal")
         return
     
     query_offer = "SELECT * FROM Oferta WHERE nombre_oferta = %(nombre_oferta)s"
@@ -641,8 +696,6 @@ def end_offer(conn):
             print(f"Código: {e.pgcode}")
             print(f"Mensaxe: {e.pgerror}")
             return None
-
-
 
 ## ------------------------------------------------------------
 def compare_prize_product(conn):
@@ -684,7 +737,6 @@ def compare_prize_product(conn):
         else:
             print(f"No hay ofertas para el color {id_color[1]}")
 
-
 ## ------------------------------------------------------------
 def menu(conn):
     """
@@ -692,13 +744,13 @@ def menu(conn):
     'q' para salir.
     """
     MENU_TEXT = """
-                                    -- MENÚ --
-    1 - Añadir Producto            2 - Añadir Color        3 - Eliminar Producto
-    4 - Eliminar Color             5 - Añadir Categoria    6 - Eliminar Categoria
-    7 - Porcentaje precio          8 - Actualizar precio   9 - Añadir Oferta
-    10 - Añadir Oferta a Categoria 11 - Categorias de Oferta
-    12 - Productos de Oferta       13 - Ofertas            14 - Terminar oferta
-    15 - Comparar precio antes y despues de Oferta       q - Salir 
+                                              -- MENÚ --
+     1 - Añadir Producto                  2 - Añadir Color             3 - Eliminar Producto
+     4 - Eliminar Color                   5 - Añadir Categoria         6 - Eliminar Categoria
+     7 - Porcentaje precio                8 - Actualizar precio        9 - Añadir Oferta
+    10 - Añadir Oferta a Categoria       11 - Categorias de Oferta    12 - Productos de Oferta          
+    13 - Ofertas                         14 - Terminar oferta
+    15 - Comparar precio antes y despues de Oferta                     q - Salir 
     """
     MENU_OPTIONS = {
         '1' : add_product,
@@ -711,6 +763,8 @@ def menu(conn):
         '8' : update_product_color_price,
         '9' : create_offer,
         '10' : link_offer_category,
+        '11' : get_offers_category,
+        '12' : get_offers_product,
         '13' : get_offers,
         '14' : end_offer,
         '15' : compare_prize_product,
